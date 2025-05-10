@@ -21,30 +21,41 @@ time_signature = st.number_input("Zaman İmzası (Time Signature)", min_value=1,
 chorus_hit = st.number_input("Nakarat Başlangıcı (ms)", min_value=0, max_value=1000000, value=30000)
 sections = st.number_input("Bölüm Sayısı", min_value=1, max_value=100, value=10)
 
-# Özellik vektörü
-features = np.array([[danceability, loudness, speechiness, acousticness,
-                      instrumentalness, valence, duration_ms,
-                      time_signature, chorus_hit, sections]])
+# Kullanıcı verisi
+user_input_df = pd.DataFrame([[danceability, loudness, speechiness, acousticness,
+                               instrumentalness, valence, duration_ms,
+                               time_signature, chorus_hit, sections]],
+                             columns=[
+                                 'danceability', 'loudness', 'speechiness', 'acousticness',
+                                 'instrumentalness', 'valence', 'duration_ms',
+                                 'time_signature', 'chorus_hit', 'sections'
+                             ])
 
-# Model eğitimi
+# Eğitim verisini hazırla
 df = pd.read_csv("dataset-of-10s.csv")
 df = df.drop(["track", "artist", "uri"], axis=1)
 X = df.drop("target", axis=1)
 y = df["target"]
+
+# Normalizasyon ve model eğitimi
 scaler = MinMaxScaler()
 X_scaled = scaler.fit_transform(X)
+
 model = LogisticRegression(max_iter=1000)
 model.fit(X_scaled[:, [0, 2, 3, 6, 9, 10, 11, 12, 13, 14]], y)
 
-# Giriş verisini ölçekle
-features_scaled = scaler.transform(
-    np.concatenate([features, np.zeros((1, X.shape[1] - features.shape[1]))], axis=1)
-)[:, [0, 2, 3, 6, 9, 10, 11, 12, 13, 14]]
+# Giriş verisini doğru sıraya göre normalize et
+user_input_full = pd.DataFrame(np.zeros((1, X.shape[1])), columns=X.columns)
+user_input_full.update(user_input_df)
+
+features_scaled = scaler.transform(user_input_full)[
+    :, [0, 2, 3, 6, 9, 10, 11, 12, 13, 14]
+]
 
 # Tahmin
 if st.button("🎶 Tahmin Et"):
     prediction = model.predict(features_scaled)[0]
-    proba = model.predict_proba(features_scaled)[0][1]  # Hit olma olasılığı
+    proba = model.predict_proba(features_scaled)[0][1]  # Hit olasılığı
 
     if prediction == 1:
         st.success("✅ Bu şarkı büyük ihtimalle bir **HIT** olacak!")
