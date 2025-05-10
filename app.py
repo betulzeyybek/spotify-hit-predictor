@@ -26,7 +26,7 @@ features = np.array([[danceability, loudness, speechiness, acousticness,
                       instrumentalness, valence, duration_ms,
                       time_signature, chorus_hit, sections]])
 
-# Modeli yeniden eğit (veya .pkl ile yüklenebilir)
+# Model eğitimi
 df = pd.read_csv("dataset-of-10s.csv")
 df = df.drop(["track", "artist", "uri"], axis=1)
 X = df.drop("target", axis=1)
@@ -44,8 +44,11 @@ features_scaled = scaler.transform(
 # Tahmin
 if st.button("🎶 Tahmin Et"):
     prediction = model.predict(features_scaled)[0]
+    proba = model.predict_proba(features_scaled)[0][1]  # Hit olma olasılığı
+
     if prediction == 1:
         st.success("✅ Bu şarkı büyük ihtimalle bir **HIT** olacak!")
     else:
         st.warning("❌ Bu şarkı muhtemelen **hit olmayabilir...**")
 
+    st.info(f"📊 Hit olma olasılığı: **%{proba*100:.2f}**")
